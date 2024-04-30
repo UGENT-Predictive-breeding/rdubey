@@ -1,0 +1,88 @@
+for(year in 1:8){
+  
+
+  
+  # Stage 1 - Initial Crosses (Year 1)
+  if(year == 1){
+    # Faba Bean: Random crosses for F1 generation
+    F1_faba = randCross(pop = Par_faba_initial, nCrosses = nCrosses_faba, nProgeny = nProgenyF1, simParam = SP_faba)
+    # Triticale: Random crosses for F1 generation
+    F1_trit = randCross(pop = Par_trit_initial, nCrosses = nCrosses_trit, nProgeny = nProgenyF1, simParam = SP_trit)
+  }
+  
+  # Stage 2 - F2 Generation (Year 2)
+  if(year == 2){
+    
+    # Faba Bean: Selfing F1 and selecting individuals for F2
+    #Self1
+    F2_faba = self(F1_faba, nProgeny = 15,keepParents = TRUE, simParam = SP_faba ) #self and keep 5 progenies
+    F2_faba = setPheno(F2_faba, h2 = 0.1,simParam = SP_faba) #S1
+    F2_trit = self(F1_trit, nProgeny = 15,keepParents = TRUE, simParam = SP_trit ) #self and keep 5 progenies
+    F2_trit = setPheno(F2_trit, h2 = 0.1,simParam = SP_trit) #S1
+  }  
+  
+  
+  if(year == 3){  
+    #hdrw1
+    F3_faba = selectWithinFam(F2_faba,nInd=5,use = "pheno",famMax=nCrosses_faba, trait = 1,simParam = SP_faba) #family perform familywise selection #selectS1
+    F3_trit = selectWithinFam(F2_trit,nInd=5,use = "pheno",famMax=nCrosses_trit, trait = 1,simParam = SP_trit) #family perform familywise selection #selectS1
+  }
+  
+  
+  # Stage 3 - F3 Generation (Year 3)
+  if(year == 4){
+    #self2
+    # Faba Bean: Selfing F1 and selecting individuals for F2
+    F4_faba = self(F3_faba, nProgeny = 5,keepParents = TRUE, simParam = SP_faba ) #self and keep 5 progenies
+    F4_faba = setPheno(F4_faba, h2 = 0.1,simParam = SP_faba) #S2
+    
+    F4_trit = self(F3_trit, nProgeny = 5,keepParents = TRUE, simParam = SP_trit ) #self and keep 5 progenies
+    F4_trit = setPheno(F4_trit, h2 = 0.1,simParam = SP_trit) #S2
+  }
+  
+  
+  
+  if(year == 5){  
+    
+    F5_faba = selectWithinFam(F4_faba,nInd=2,use = "pheno",famMax=nCrosses_faba, trait = 1,simParam = SP_faba) #family perform familywise selection #selectS1
+    F5_trit = selectWithinFam(F4_trit,nInd=2,use = "pheno",famMax=nCrosses_trit, trait = 1,simParam = SP_trit) #family perform familywise selection #selectS1
+    
+  }
+  
+  
+  # Stage 6 -  Trial Creation and Selection
+  if (year == 6) {
+    #self/grow and select 12 fb and 12 trit
+    # Stage 6 - Trial Creation and Selection
+    
+    
+    
+    faba_pyt = selectInd(F5_faba,nInd=28,use = "pheno" ,trait=1, simParam = SP_faba)
+    faba_pyt <- setPheno(faba_pyt,NULL,reps = 1,h2=0.1,simParam = SP_faba) #phenotypic selection of faba
+    
+    trit_pyt = selectInd(F5_trit,nInd=28,use = "pheno" ,trait=1, simParam = SP_trit)
+    trit_pyt<- setPheno(trit_pyt,NULL,reps = 1,h2=0.1,simParam = SP_trit)
+    
+  }
+  
+  # Stage 7 - Advanced Intercrop Trial
+  if (year == 7) {
+    faba_ayt = selectInd(faba_pyt,nInd=6,use = "pheno" ,trait=1, simParam = SP_faba)
+    faba_pyt <- setPheno(faba_pyt,NULL,reps = 1,h2=0.1,simParam = SP_faba) 
+    trit_ayt = selectInd(trit_pyt,nInd=6,use = "pheno" ,trait=1, simParam = SP_trit)
+    trit_pyt<- setPheno(trit_pyt,NULL,reps = 1,h2=0.1,simParam = SP_trit)
+  }
+  
+  # Stage 8 - Final Intercrop Trial Selection
+  if (year == 8) {
+    eyt_trial = createIntercropTrial(faba_ayt, trit_ayt, reps = nreps_eyt, traitA = 2, traitB = 2, "ALL", h2_eyt)
+    eyt_comb = as.data.frame(eyt_trial[["combinations_data"]])
+    top_performers = selectTopPerformers(eyt_comb, 36)
+    
+    faba = head(unique(top_performers$idA), n = 6)
+    trit = head(unique(top_performers$idB), n = 6)
+    
+    faba_eyt = faba_ayt[faba_ayt@id %in% faba]
+    trit_eyt = trit_ayt[trit_ayt@id]
+  }                     
+}
