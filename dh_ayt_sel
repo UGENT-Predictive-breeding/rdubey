@@ -1,0 +1,98 @@
+
+
+for(year in 1:6){
+  
+  
+if (year<6){
+ # s1:Crosses #s2:dh production
+F1_faba= randCross(pop= initial_faba,   nCrosses= nCrosses_faba, nProgeny = 1,  simParam = SP_faba, balance = TRUE)
+
+F1_trit= randCross(pop= initial_trit, nCrosses= nCrosses_trit,  nProgeny = 1,  simParam = SP_trit, balance = TRUE)
+}
+
+
+
+if (year<5) {
+#s1:Identification of DH, self
+#s2:check phenotypes (visual, h2=0.1) and seed multiply
+  
+DH_faba= makeDH(pop=F1_faba, nDH = dh_faba, keepParents = TRUE, simParam = SP_faba) 
+parents_faba= cbind(F1_faba@mother, F1_faba@father)
+DH_faba= setPheno(pop=DH_faba,h2=0.1, reps=1, trait=1, simParam = SP_faba ) 
+
+DH_trit= makeDH(F1_trit, nDH = dh_trit, keepParents = TRUE, simParam = SP_trit)
+parents_trit= cbind(F1_trit@mother, F1_trit@father)
+DH_trit= setPheno(pop=DH_trit,h2=0.1, reps=1, trait=1, simParam = SP_trit )
+}
+
+
+  if (year<4) {
+# Create Intercrop Trial: 784 Combinations (28x28)
+
+
+    faba_pyt<- selectInd(DH_faba, nInd=392, use="pheno", trait = 1,simParam = SP_faba)
+    faba_pyt <- setPheno(faba_pyt,NULL,reps = 1,h2=0.1,simParam = SP_faba) #phenotypic selection of faba
+    
+    
+    trit_pyt<- selectInd(DH_trit, nInd=392, use="pheno", trait = 1,simParam = SP_trit)
+    trit_pyt<- setPheno(trit_pyt,NULL,reps = 1,h2=0.1,simParam = SP_trit) #phenotypic selection of faba
+    
+    
+    # Create Intercrop Trial: 784 Combinations (28x28)
+    #pyt_trial = createIntercropTrial(DH_faba, DH_trit, varE=NULL, reps= 1, traitA=2, traitB=2, "ALL")
+    #pyt_comb = as.data.frame(pyt_trial[["combinations_data"]])
+    
+    # Select Top Performers (intercrop_combinations)
+    #top_performers = selectTopPerformers(pyt_comb, 64)
+    
+    # Extract Top 8 Faba and Triticale Parents (from top combinations)
+    # speciesA_pyt = extractSpeciesIDs(top_performers, 8)
+    #speciesB_pyt = extractSpeciesIDs(top_performers, 8)
+    
+    faba_pyt = selectInd(faba_pyt, 12, use= "pheno", simParam=SP_faba)
+    trit_pyt = selectInd(trit_pyt, 12, use= "pheno", simParam=SP_trit)
+   
+}
+
+  if (year<3) {
+# Create Intercrop Trial with Selected IDs from intercrop trial with top performing faba and trit
+ayt_trial = createIntercropTrial(faba_pyt, trit_pyt, reps=nreps_ayt, traitA=2, traitB=2, "ALL", h2_ayt)#varE=0.1, 
+ayt_comb = as.data.frame(ayt_trial[["combinations_data"]])
+
+# Select Top Performers
+top_performers = selectTopPerformers(ayt_comb, ncomb_eyt)
+
+# Extract Top 4 Faba and Triticale Parents to proceed for advance yield trials
+speciesA_ayt= unique(top_performers$idA) %>% head(n = sqrt(ncomb_eyt))
+speciesB_ayt= unique(top_performers$idB) %>% head(n = sqrt(ncomb_eyt))
+
+#  Selected IDs
+faba_eyt = faba_pyt[faba_pyt@id %in% speciesA_ayt]
+trit_eyt = trit_pyt[trit_pyt@id %in% speciesB_ayt]
+  }
+  
+  
+  if(year<2){
+# Create Intercrop Trial with Final Selection
+eyt_trial = createIntercropTrial(faba_eyt, trit_eyt, reps= nreps_eyt,traitA= 2,traitB= 2, "ALL",h2_eyt) #varE=0.1,
+eyt_comb = as.data.frame(eyt_trial[["combinations_data"]])
+
+
+
+# Select Top Performers
+top_performers = selectTopPerformers(eyt_comb, 36)
+
+# Extract Top 4 Faba and Triticale Parents to proceed for advance yield trials
+faba= unique(top_performers$idA) %>% head(n = 6)
+trit= unique(top_performers$idB) %>% head(n = 6) # refil parents  to next breeding
+faba_eyt = faba_eyt[faba_eyt@id %in% faba]
+trit_eyt = trit_eyt[trit_eyt@id %in% trit]
+
+ }
+  
+  if (year<1){
+# Select the Top Performing combination
+final_combo = eyt_comb %>% arrange(desc(pheno_IC)) %>% head(n = 1)
+  }
+}
+
